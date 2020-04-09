@@ -1,0 +1,97 @@
+\documentclass{article}
+
+\title{Objective-C Language Proposal for non-Runtime Protocols}
+\author{Nathan Lanza}
+\date{April 9, 2020}
+
+\begin{document}
+
+\maketitle
+\section{Motivation}
+
+Objective-C allows the developer to query information about protocols at
+runtime. The compiler emits various types of metadata for protocol declarations
+including:
+
+\begin{itemize}
+  \item A \verb|cstring| for the protocol's name
+  \item An \verb|_objc_method_list| of \verb|_objc_method|s for each method
+    defined as part of the protocol. This creates four lists: optional-instance,
+    non-optional-instance, optional-class and non-optional-class.
+  \item Similar to the above bullet point for properties.
+  \item A \verb|_protocol_list_t| for the protocols which this protocol inherits
+    from.
+  \item A list of the types of the methods that this protocol requires in
+    Objective-C @encoding format.
+  \item A \verb|_protocol_t| struct containing various other pieces of
+    information along with pointers to all of the above info.
+  \item An element in the \verb|__objc_protolist| section pointing to the
+    \verb|_protocol_t|.
+\end{itemize}
+
+Ultimately, given extensive usage of protocols a program can end up with
+megabytes worth of unused metadata needlessly bloating binary size.
+
+We are proposing an annotation that can be applied to protocol declarations that
+will cause the compiler to not emit any metadata. The protocol would still be
+used by the frontend at compile time to perform all the usually typechecking,
+but none of the above mentioned metadata would be emitted.
+
+\section{Implementation}
+
+The following attribute will be allowed on Objective-C protocol declarations to
+declare them as non-runtime protocols:
+
+\[ \verb|__attribute__((objc_non_runtime_protocol))| \]
+
+This tells the compiler that it does not need to emit metadata associated with
+the protocol. For example, when emitting the \verb|_class_ro_t| for a class we
+must emit a \verb|_protocol_list_t| containing references to the
+\verb|_protocol_t| for all the declared protocol conformances. When we walk
+through this list we will check all the protocols for whether or not they are
+attributed with this annotation and, if so, simply skip over this protocol.
+
+There are various runtime APIs that will attempt to inspect the runtime metadata
+that we are proposing to eliminate. The first would be then \linebreak
+\verb|@protocol(SomeProtocol)| expression. This is trivially addressable as it's
+codegen actually access the named protocol. Thus we can catch this in the
+frontend. We currently emit an error diagnostic of ``can not use a protocol
+declared \verb|objc_non_runtime_protocol| in an \verb|@protocol| expression''.
+
+The Objective-C runtime also offers an \verb|objc_getProtocol| function that
+accepts a \verb|char *| string and will lookup the protocol from the
+\verb|__objc_protolist| section. For any given input string, if the
+runtime can't find the protocol it will simply return \verb|null|. For a protocol
+annotated with \verb|objc_non_runtime_protocol| this function would simply just
+return \verb|null| as well since we would not be emitting anything to that
+section.
+
+There are many other APIs defined by the runtime that operate on protocols.
+However, they all require a \verb|Protocol| handle as returned by one of the two
+above mentioned APIs. So they would all not even be callable given no handle to
+the protocol.
+
+\section{Tools to Aid in Correct Annotaiton}
+
+\subsection{Runtime Check Builds}
+
+A build configuration can be defined to interpose the \verb|objc_getProtocol|
+function to test the argument against a list of non-runtime attriubted protocols.
+We can emit the list of attributed protocols into a seperate section that is
+loaded at runtime. When the program attempts to call \verb|objc_getProtocol|
+with the name of a protocol that was marked as non-runtime the program could
+crash with an appropriate error.
+
+\subsection{Whole-app Analysis}
+
+This protocol metadata removal optimization is done in the frontend. But
+information about the requested consumers of the runtime metadata of a protocol
+is not globally known in the frontend.
+
+We can define a whole-app analysis LTO pass which tracks all protocols that had
+runtime APIs used against them. If a given protocol's metadata is not observed
+to be used during this analysis we can suggest to the developer that a protocol
+could be annotated as a non-runtime candidate. This could possible be integrated
+into various IDEs such as Xcode and Visual Studio Code.
+
+\end{document}
