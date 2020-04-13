@@ -71,6 +71,14 @@ However, they all require a \verb|Protocol| handle as returned by one of the two
 above mentioned APIs. So they would all not even be callable given no handle to
 the protocol.
 
+\subsection{Considerations for Swift}
+
+Swift uses protocol metadata at runtime for various purposes. At first, the plan
+for Swift interoptability would simple be to reject attempts to use ObjC
+non-runtime protocols from Swift. Future considerations could be main for
+properly using the protocol within Swift for compile-time typechecking in a
+similar fashion to what's being proposed for Objective-C.
+
 \section{Tools to Aid in Correct Annotaiton}
 
 \subsection{Runtime Check Builds}
