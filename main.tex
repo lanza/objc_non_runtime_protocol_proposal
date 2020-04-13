@@ -102,4 +102,12 @@ to be used during this analysis we can suggest to the developer that a protocol
 could be annotated as a non-runtime candidate. This could possible be integrated
 into various IDEs such as Xcode and Visual Studio Code.
 
+\subsection{Statically Inferable Cases}
+
+There are also cases where it is entirely statically inferable whether or not
+the protocol would make sense to mark as non-runtime. If a protocol is defined
+in a `\verb|.m| or \verb|.mm| file then (in most cases) this won't be visible
+in any other translation unit. If it is not used dynamically then it would be
+valid to mark it as non-runtime.
+
 \end{document}
