@@ -52,7 +52,7 @@ through this list we will check all the protocols for whether or not they are
 attributed with this annotation and, if so, simply skip over this protocol.
 
 There are various runtime APIs that will attempt to inspect the runtime metadata
-that we are proposing to eliminate. The first would be then \linebreak
+that we are proposing to eliminate. There is also the compile time \linebreak
 \verb|@protocol(SomeProtocol)| expression. This is trivially addressable as it's
 codegen actually access the named protocol. Thus we can catch this in the
 frontend. We currently emit an error diagnostic of ``can not use a protocol
