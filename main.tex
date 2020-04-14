@@ -66,6 +66,11 @@ annotated with \verb|objc_non_runtime_protocol| this function would simply just
 return \verb|null| as well since we would not be emitting anything to that
 section.
 
+There is also a \verb|NSProtocolFromString| defined in the \verb|Foundation|
+framework. The implementation is closed source, but tests show that the
+implementation mirrors that of the above \verb|objc_getProtocol| and thus the
+above paragraph is valid for it as well.
+
 There are many other APIs defined by the runtime that operate on protocols.
 However, they all require a \verb|Protocol| handle as returned by one of the two
 above mentioned APIs. So they would all not even be callable given no handle to
